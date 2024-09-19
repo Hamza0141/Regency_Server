@@ -1,6 +1,15 @@
 const conn = require("../config/db.config");
 const crypto = require("crypto");
 
+const formData = require("form-data");
+const Mailgun = require("mailgun.js");
+const mailgun = new Mailgun(formData);
+const mg = mailgun.client({
+  username: "api",
+  key: process.env.MAILGUN_API_KEY,
+});
+
+
 const updateOrderInfo = async (id, orderUpdates) => {
   console.log(orderUpdates);
   try {
@@ -46,6 +55,7 @@ const updateOrderInfo = async (id, orderUpdates) => {
 
 
 const updateOrderStatus = async (orderHash, newStatus) => {
+  console.log(newStatus);
   try {
     // Find order_id based on order_hash
     const query1 = `
@@ -65,7 +75,31 @@ const updateOrderStatus = async (orderHash, newStatus) => {
         `;
     const params = [newStatus.order_status, orderId];
     const result = await conn.query(query2, params);
+    if (result && newStatus.order_status === "Completed") {
+      mg.messages
+        .create(`${process.env.MAILGUN_DOMAIN}`, {
+          from: `Regency Auto Repair <${process.env.MAILGUN_REPLIES}>`,
+          to: [`${newStatus.customer_email}`],
+          subject: "Your Vehicle Is Ready !",
+          text: "Thankyou for choosing us!",
+          html: `<div style="font-family: Arial, sans-serif; color: #333; text-align: center;">
+  <h2 style="color: #4CAF50; font-size: 36px; margin-bottom: 20px;">Your Vehicle Is Ready.</h2>
 
+  <p style="font-size: 18px; margin-bottom: 30px;">
+    Pleas come pick it up ! 
+  </p>
+  <p style="font-size: 18px; margin-bottom: 30px;">
+    Thank You for Choosing Regency Auto Repair. 
+  </p>
+
+  <p style="margin-top: 40px; font-size: 14px; color: #666;">
+    If you have any questions, feel free to <a href="mailto:replies@regencyautorepair.com" style="color: #4CAF50;">contact us</a>.
+  </p>
+</div>`,
+        })
+        .then((msg) => console.log(msg)) // logs response data
+        .catch((err) => console.log(err));
+    } 
     return true; // Indicate successful update
   } catch (error) {
     console.error("Error updating order status:", error);

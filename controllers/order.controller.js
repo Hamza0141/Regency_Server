@@ -20,24 +20,24 @@ async function createOrder(req, res, next) {
     }
 
 }
-const updateSingleOrder = async (req, res, next) => {
-  const id = req.params.id;
+// const updateSingleOrder = async (req, res, next) => {
+//   const id = req.params.id;
 
-  const updateOrder = await orderService.updateOrderByHash(
-    id,
-    req.body
-  );
-  if (!updateOrder) {
-    res.status(400).json({
-      error: "Failed to update order!",
-    });
+//   const updateOrder = await orderService.updateOrderByHash(
+//     id,
+//     req.body
+//   );
+//   if (!updateOrder) {
+//     res.status(400).json({
+//       error: "Failed to update order!",
+//     });
     
-  } else {
-    res.status(200).json({
-      success: "true",
-    });
-  }
-};
+//   } else {
+//     res.status(200).json({
+//       success: "true",
+//     });
+//   }
+// };
 
 const getSingleOrder = async (req, res, next) => {
   const id = req.params.id;
@@ -74,7 +74,7 @@ const getOrderByCustomerId = async (req, res, next) => {
 };
 module.exports = {
   createOrder,
-  updateSingleOrder,
+  // updateSingleOrder,
   getSingleOrder,
   getAllOrders,
   getOrderByCustomerId,

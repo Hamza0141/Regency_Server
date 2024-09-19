@@ -2,6 +2,12 @@ const express = require('express');
 const dotenv = require('dotenv').config()
 const sanitize = require('sanitize');
 const cors = require('cors');
+
+
+const formData = require("form-data");
+const Mailgun = require("mailgun.js");
+const mailgun = new Mailgun(formData);
+
 // Set up the CORS options to allow requests from our front-end 
 const corsOptions = {
   origin: process.env.FRONTEND_URL,
@@ -29,6 +35,7 @@ const port = process.env.PORT
 app.listen(port, () => {
   console.log(`Server running on port: ${port}`);
 });
+
 
 // Export the webserver for use in the application 
 module.exports = app;

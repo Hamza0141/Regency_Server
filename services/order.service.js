@@ -3,11 +3,17 @@ const crypto = require("crypto");
 const formData = require("form-data");
 const Mailgun = require("mailgun.js");
 const mailgun = new Mailgun(formData);
+const mg = mailgun.client({
+  username: "api",
+  key: process.env.MAILGUN_API_KEY,
+});
 
 const addOrder = async (orderInfo) => {
   try {
-    const order_hash = crypto.randomBytes(10).toString("hex");
 
+
+
+    const order_hash = crypto.randomBytes(10).toString("hex");
     // Insert into orders table
     const query1 = `
       INSERT INTO orders 
@@ -62,7 +68,33 @@ const addOrder = async (orderInfo) => {
       orderInfo.order_status, // Assuming you have an order status in orderInfo
     ];
     const rows4 = await conn.query(query4, params4);
+if(rows4){
+  mg.messages
+    .create(`${process.env.MAILGUN_DOMAIN}`, {
+      from: `Regency Auto Repair <${process.env.MAILGUN_REPLIES}>`,
+      to: [`${orderInfo.customer_email}`],
+      subject: "Thank You for Your Order!",
+      text: "Thankyou for choosing us!",
+      html: `<div style="font-family: Arial, sans-serif; color: #333; text-align: center;">
+  <h1 style="color: #4CAF50; font-size: 36px; margin-bottom: 20px;">Thank You for Choosing Regency Auto Repair!</h1>
+  <p style="font-size: 18px; margin-bottom: 30px;">
+    We truly appreciate your trust in our service. Your vehicle is in expert hands!
+  </p>
+  <p style="font-size: 16px; margin-bottom: 40px;">
+    You can easily check your order progress by clicking the button below:
+  </p>
+  <a href="http://regencyautorepair.com/customer/order/detail/${order_hash}" style="background-color: #4CAF50; color: white; padding: 12px 24px; text-decoration: none; font-size: 18px; border-radius: 5px;">
+    View Order Progress
+  </a>
+  <p style="margin-top: 40px; font-size: 14px; color: #666;">
+    If you have any questions, feel free to <a href="mailto:replies@regencyautorepair.com" style="color: #4CAF50;">contact us</a>.
+  </p>
+</div>`,
+    })
+    .then((msg) => console.log(msg)) // logs response data
+    .catch((err) => console.log(err));
 
+}
     // Return true if all queries are successful
     return true;
   } catch (err) {
@@ -102,7 +134,8 @@ const updateOrderInfo = async (orderId, orderUpdates) => {
 
 
 
-const updateOrderStatus = async (orderId, orderStatus) => {
+const updateOrderStatus = async (orderId, orderStatus, customer_email) => {
+    console.log("hii", orderId, orderStatus, customer_email);
   try {
     const query = `
       UPDATE order_status 
@@ -129,38 +162,43 @@ const updateOrderServices = async (orderId, serviceUpdates) => {
     }
 };
 
-const updateOrderByHash = async (orderHash, orderUpdates) => {
-  try {
-    // Retrieve the order ID associated with the provided hash
-    const query1 = `
-      SELECT order_id 
-      FROM orders 
-      WHERE order_hash = ?
-    `;
-    const [orderRow] = await conn.query(query1, [orderHash]);
-    const orderId = orderRow.order_id;
+// const updateOrderByHash = async (orderHash, orderUpdates) => {
 
-    // Update order info
-    if (orderUpdates.orderInfo) {
-      await updateOrderInfo(orderId, orderUpdates.orderInfo);
-    }
+//   try {
+//     // Retrieve the order ID associated with the provided hash
+//     const query1 = `
+//       SELECT order_id 
+//       FROM orders 
+//       WHERE order_hash = ?
+//     `;
+//     const [orderRow] = await conn.query(query1, [orderHash]);
+//     const orderId = orderRow.order_id;
 
-    // Update order status
-    if (orderUpdates.orderStatus) {
-      await updateOrderStatus(orderId, orderUpdates.orderStatus);
-    }
+//     // Update order info
+//     if (orderUpdates.orderInfo) {
+//       await updateOrderInfo(orderId, orderUpdates.orderInfo);
+//     }
 
-    // Update order services
-    if (orderUpdates.serviceUpdates) {
-      await updateOrderServices(orderId, orderUpdates.serviceUpdates);
-    }
+//     // Update order status
+//     if (orderUpdates.orderStatus) {
+//       await updateOrderStatus(
+//         orderId,
+//         orderUpdates.orderStatus,
+//         orderUpdates.customer_email
+//       );
+//     }
 
-    return true; // Indicate successful update
-  } catch (error) {
-    console.error("Error updating order:", error);
-    return false;
-  }
-};
+//     // Update order services
+//     if (orderUpdates.serviceUpdates) {
+//       await updateOrderServices(orderId, orderUpdates.serviceUpdates);
+//     }
+
+//     return true; // Indicate successful update
+//   } catch (error) {
+//     console.error("Error updating order:", error);
+//     return false;
+//   }
+// };
 
 
 
@@ -327,7 +365,7 @@ const getOrdersByCustomerHash = async (customerHash) => {
 
 module.exports = {
   addOrder,
-  updateOrderByHash,
+  // updateOrderByHash,
   getOrderByHas,
   getAllOrders,
   getOrdersByCustomerHash,
